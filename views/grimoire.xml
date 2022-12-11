@@ -9,7 +9,6 @@
     <field name = "level"/>
     <field name = "grimoire_type"/>
     <field name = "player"/>
-    <field name = "npc_village"/>
 
 
   </tree>
@@ -60,7 +59,6 @@
     <field name = "level"/>
     <field name = "grimoire_type"/>
     <field name = "player"/>
-    <field name = "npc_village"/>
     <templates>
       <t t-name="kanban-box">
       <div t-attf-class="oe_kanban_card o_kanban_record_has_image_fill ">

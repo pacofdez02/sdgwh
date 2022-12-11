@@ -4,7 +4,7 @@ from odoo.exceptions import ValidationError
 
 import random
 
-
+#Lunes en clase restringir cantidad de edificios de CADA tipo a 10 para no tener infinitos y la producción sea realista.
 
 class player(models.Model):
     _name = 'white_clover.player'
@@ -37,9 +37,9 @@ class player(models.Model):
     def _get_total_productions(self):
         for c in self:
             c.mana_production = 0
-            c.gold_production =0
-            c.evolver_production =0
-            if len(c.buildings)> 0:
+            c.gold_production = 0
+            c.evolver_production = 0
+            if len(c.buildings) > 0:
                 #print("ací arriba 37")
                 c.mana_production = sum(c.buildings.mapped('mana_production'))
                 #print("ací arriba 39")
@@ -74,13 +74,13 @@ class player(models.Model):
     @api.constrains('mana')
     def _check_mana(self):
         for record in self:
-            if record.mana > 10000:
+            if record.mana > 50000:
                 raise ValidationError("You have too much mana %s" % record.mana)
             
     @api.constrains('evolver')
     def _check_evolver(self):
         for record in self:
-            if record.evolver > 10000:
+            if record.evolver > 50000:
                 raise ValidationError("You have too much evolver %s" % record.evolver)
             
             
@@ -110,19 +110,6 @@ class player(models.Model):
             
 
 
-class npc_village(models.Model):
-    _name = 'white_clover.npc_village'
-    _description = 'NPC Village'
-
-    name = fields.Char(required = True)
-    image = fields.Image(max_width = 200, max_height = 200)
-
-    mana = fields.Float(readonly=True)
-    gold = fields.Float(readonly=True)
-    evolver = fields.Float(readonly = True)
-
-    grimoires = fields.One2many('white_clover.grimoire', 'npc_village')
-    buildings = fields.One2many('white_clover.building', 'npc_village')
 
 
 class building(models.Model):
@@ -135,7 +122,6 @@ class building(models.Model):
     required_gold_levelup = fields.Float(compute='_get_required_gold_levelup')
 
     player = fields.Many2one('white_clover.player',ondelete="cascade")
-    npc_village = fields.Many2one('white_clover.npc_village', ondelete="cascade")
 
     building_type = fields.Many2one('white_clover.building_type')
     
@@ -152,7 +138,40 @@ class building(models.Model):
         for record in self:
             if record.level > 10:
                 raise ValidationError("Level can't be more than 10 %s" % record.level)
+   
                  
+    def _get_productions(self):
+     for b in self:
+        b.mana_production = 0
+        b.gold_production = 0
+        b.evolver_production = 0
+         
+        level = b.level
+
+        mana_production = b.building_type.mana_production * level * 10
+        gold_production = b.building_type.gold_production * level * 10
+        evolver_production = b.building_type.evolver_production * level * 10
+
+
+
+
+        if mana_production + b.player.mana >= 0 and gold_production + b.player.gold >= 0 and evolver_production + b.player.evolver >= 0:
+            b.mana_production = mana_production
+            b.gold_production = gold_production
+            b.evolver_production = evolver_production      
+    
+        else:
+            b.mana_production = 0
+            b.gold_production = 0
+            b.evolver_production = 0        
+
+
+    
+    
+    def _get_required_gold_levelup(self):
+        for c in self:
+            c.required_gold_levelup = 4 ** c.level
+    '''   SE PUEDE HACER DE LAS DOS FORMAS, pero hacemos la de levelupgrade
     def update_level(self):
         for b in self:
             if b.player.gold >= (b.gold_build_cost ** b.level):
@@ -168,44 +187,7 @@ class building(models.Model):
                         'sticky': False
                     }
                 }
-    
-                 
-    def _get_productions(self):
-     for b in self:
-        b.mana_production = 0
-        b.gold_production = 0
-        b.evolver_production = 0
-         
-        #print("ací arriba 149")
-        #if(b.player): # açò heu he comentat i descomentat 1000 vegades però pense que no és el problema
-        level = b.level
-
-        mana_production = b.building_type.mana_production * level * 10
-        gold_production = b.building_type.gold_production * level * 10
-        evolver_production = b.building_type.evolver_production * level * 10
-
-
-
-
-        if mana_production + b.player.mana >= 0 and gold_production + b.player.gold >= 0 and evolver_production + b.player.evolver >= 0:
-            #print("ací arriba 160 IF")
-
-            b.mana_production = mana_production
-            b.gold_production = gold_production
-            b.evolver_production = evolver_production      
-    
-        else:
-            #print("ací arriba 166 ELSE")
-            b.mana_production = 0
-            b.gold_production = 0
-            b.evolver_production = 0        
-
-
-    
-    
-    def _get_required_gold_levelup(self):
-        for c in self:
-            c.required_gold_levelup = 4 ** c.level
+    '''
 
     def levelupgrade_building(self):
         for c in self:
@@ -270,8 +252,10 @@ class grimoire(models.Model):
     grimoire_type = fields.Many2one('white_clover.grimoire_type', default = getGrimoireType)
     grimoire_type_write = fields.Many2one('white_clover.grimoire_type')
 
+
     player = fields.Many2one('white_clover.player')
-    npc_village = fields.Many2one('white_clover.npc_village') 
+    required_mana_levelup = fields.Float(compute='_get_required_mana_levelup')
+
 
     hp = fields.Integer(readonly = True)
     attack = fields.Integer(readonly = True)
@@ -325,12 +309,29 @@ class grimoire(models.Model):
     #check_xp = fields.Integer()
     #check_lvl = fields.Integer(compute="check_level")
     
-    #@api.constrains('xp')
-    #def check_xp(self):
-        #for b in self:
-         #   if b.xp > 1000000:
-        #        raise ValidationError("You cant have more than 1m xp %s" % b.xp)
+    @api.constrains('level')
+    def _check_level(self):
+        for record in self:
+            if record.level > 100:
+                raise ValidationError("You cant have more than 100 levels %s" % record.level)
             
+        
+    
+    
+    def _get_required_mana_levelup(self):
+        for c in self:
+            c.required_mana_levelup = 50 * c.level
+
+    def levelupgrade_grimoire(self):
+        for c in self:
+            required_mana = c.required_mana_levelup  # Smartbutton
+            available_mana = c.player.mana
+            if (required_mana <= available_mana):
+                c.level += 1
+                c.player.mana = c.player.mana - required_mana
+            else:
+                raise ValidationError("You don't have enough mana %s" % required_mana)       
+       
     #igual hay que tocar este constrains porque el xp puede pasarse un poco y dar mas de nivel 100
     #@api.constrains('level')
     #def check_level(self):
