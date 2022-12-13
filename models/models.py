@@ -166,6 +166,8 @@ class player(models.Model):
                 p.gold -= 10000
                 p.mana -= 8000
                 p.evolver -= 5000
+            else:
+                raise ValidationError("You need at least 5000 evolver, 10000 gold and 8000 mana " )
 
 
 class building(models.Model):
