@@ -133,7 +133,11 @@
 
 
                 <page string ="Invoke">
-                  <group>
+                  <group><button name="create_grimoire"
+                                          type="object"
+                                          string="Invoke"
+                                          class="btn btn-primary"/>
+                  <!--
                     <field name="grimoires" mode="kanban">
 <kanban>
     <field name="id"/>
@@ -145,6 +149,7 @@
     <templates>
       <t t-name="kanban-box">
       <div t-attf-class="oe_kanban_card o_kanban_record_has_image_fill ">
+                               
                                 <div class="o_kanban_image_fill_left o_kanban_image_full d-none d-md-block"
                                      t-attf-style="background-image:url('#{kanban_image('white_clover.grimoire',
                             'image', record.id.value, placeholder)}')">
@@ -158,25 +163,21 @@
                                     </a>
                                 </div>
                                 <div class="oe_kanban_details d-flex flex-column">
-                                  <button name="invoke_grimoire"
-                                          type="object"
-                                          string="invoke_grimoire"
-                                          class="btn btn-primary"
-                                          context="{'ctx_player':parent.id}">Invoke</button>
+                                  
                               </div>
                             </div>
       </t>
     </templates>
   </kanban>
                     </field>
-                  </group>
+                 --> </group>
                 </page>
 
 
 
                 <page string ="Grimoires">
                   <group>   
-                    <field name="grimoires" mode="kanban">
+                    <field name="upgrade_grimoires" mode="kanban">
                    <kanban>
     <field name = "id"/>
     <field name = "name"/>
@@ -187,11 +188,17 @@
     <templates>
       <t t-name="kanban-box">
       <div t-attf-class="oe_kanban_card o_kanban_record_has_image_fill ">
-                                <div class="o_kanban_image_fill_left o_kanban_image_full d-none d-md-block"
-                                     t-attf-style="background-image:url('#{kanban_image('white_clover.grimoire',
-                            'image', record.id.value, placeholder)}')">
-                                </div>
+                              
 
+
+                                <div class="o_kanban_image_fill_left o_kanban_image_full d-none d-md-block">
+                                  <a type="open">
+                                  <img class="oe_kanban_image"
+                                  t-att-alt="record.name.value"
+                                  t-att-src="kanban_image('white_clover.grimoire','image',record.id.value,placeholder)"/>
+                                  </a>  
+                                </div>
+                              
                                 <div class="oe_kanban_details d-flex flex-column">
                                     <a type="open">
                                         <h4 class="o_kanban_record_title oe_partner_heading">
@@ -259,6 +266,24 @@
       </t>
     </templates>
   </kanban>
+  </field>
+  </record>
+
+  <record model="ir.ui.view" id="white_clover.player_search">
+  <field name="name">white_clover player</field>
+  <field name="model">white_clover.player</field>
+  <field name="arch" type="xml">
+  <search>
+    <field name="name"/>
+    <field name="mana"/>
+    <field name="gold"/>
+    <field name="evolver"/>
+
+    <filter name="mana" string="Mana" domain="[('mana','>',0)]"/>
+    <filter name="gold" string="Gold" domain="[('gold','>',0)]"/>
+    <filter name="evolver" string="Evolver" domain="[('evolver','>',0)]"/>
+
+  </search>
   </field>
   </record>
 

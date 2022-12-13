@@ -31,6 +31,8 @@ class player(models.Model):
 
     
     grimoires = fields.One2many('white_clover.grimoire', 'player')
+    upgrade_grimoires = fields.Many2many('white_clover.grimoire',compute ="get_grimoires")
+
     grimoires_qty = fields.Integer(compute="get_grimoires_qty")
     
     @api.depends('buildings')
@@ -47,7 +49,11 @@ class player(models.Model):
                 #print("ací arriba 41")
                 c.evolver_production = sum(c.buildings.mapped('evolver_production'))
                 #print("mana   ",c.mana)
-          
+
+    @api.depends('grimoires')
+    def get_grimoires(self):
+        for g in self:
+            g.upgrade_grimoires = self.env['white_clover.grimoire'].search([('player','=',g.id)])
 
     @api.depends('grimoires')
     def get_grimoires_qty(self):
@@ -109,7 +115,57 @@ class player(models.Model):
         return distance
             
 
+    def create_grimoire(self):
+        for p in self:
+            print("hola")
+            grimoiresList = self.env["white_clover.grimoire_type"].search([]).ids
 
+            gid = random.choice(grimoiresList)
+
+
+            if self.env["white_clover.grimoire_type"].search([('id', '=', gid)], limit=1).name == "White grimoire":
+                image = self.env["white_clover.grimoire_type"].search([('id', '=', gid)], limit=1).image
+                hp = random.betavariate(5,1.3)*15
+                attack = random.betavariate(1.5,1.5)*10
+                defense = random.betavariate(1.5,1.5)*10
+                speed = random.betavariate(1.5,1.5)*10
+
+            if self.env["white_clover.grimoire_type"].search([('id', '=', gid)], limit=1).name == "Red grimoire":
+                image = self.env["white_clover.grimoire_type"].search([('id', '=', gid)], limit=1).image
+                attack = random.betavariate(5,1.3)*20
+                hp = random.betavariate(1.5,1.5)*10
+                defense = random.betavariate(1.5,1.5)*10
+                speed = random.betavariate(1.5,1.5)*10
+
+            if self.env["white_clover.grimoire_type"].search([('id', '=', gid)], limit=1).name == "Blue grimoire":
+                image = self.env["white_clover.grimoire_type"].search([('id', '=', gid)], limit=1).image
+                defense = random.betavariate(5,1.3)*20
+                attack = random.betavariate(1.5,1.5)*10
+                hp = random.betavariate(1.5,1.5)*10
+                speed = random.betavariate(1.5,1.5)*10
+
+            if self.env["white_clover.grimoire_type"].search([('id', '=', gid)], limit=1).name == "Green grimoire":
+                image = self.env["white_clover.grimoire_type"].search([('id', '=', gid)], limit=1).image
+                speed = random.betavariate(5,1.3)*20
+                attack = random.betavariate(1.5,1.5)*10
+                defense = random.betavariate(1.5,1.5)*10
+                hp = random.betavariate(1.5,1.5)*10
+
+            name = self.env["white_clover.grimoire_type"].search([('id', '=', gid)], limit=1).name 
+            if p.gold >= 10000 and p.mana >= 8000 and p.evolver >= 5000 :
+                self.env['white_clover.grimoire'].create({
+                        "name": name,
+                        "grimoire_type": self.env["white_clover.grimoire_type"].search([('id', '=', gid)], limit=1).id,
+                        "player": p.id,
+                        "hp": hp,
+                        "image": image,
+                        "defense": defense,
+                        "attack": attack,
+                        "speed":speed
+                })
+                p.gold -= 10000
+                p.mana -= 8000
+                p.evolver -= 5000
 
 
 class building(models.Model):
@@ -236,7 +292,7 @@ class grimoire(models.Model):
     _name = 'white_clover.grimoire'
     _description = 'Grimoire'
 
-    name = fields.Char(required = True)
+    name = fields.Char()
 
     image = fields.Image()
     
@@ -249,7 +305,7 @@ class grimoire(models.Model):
         return random.choice(grimoiresList)
 
 
-    grimoire_type = fields.Many2one('white_clover.grimoire_type', default = getGrimoireType)
+    grimoire_type = fields.Many2one('white_clover.grimoire_type')
     grimoire_type_write = fields.Many2one('white_clover.grimoire_type')
 
 
@@ -328,6 +384,28 @@ class grimoire(models.Model):
             available_mana = c.player.mana
             if (required_mana <= available_mana):
                 c.level += 1
+                if c.grimoire_type.name == "White grimoire":
+                    c.hp += 2
+                    c.attack += 1
+                    c.defense += 1
+                    c.speed  += 1
+                if c.grimoire_type.name == "Red grimoire":
+                    c.hp += 1
+                    c.attack += 2
+                    c.defense += 1
+                    c.speed  += 1
+                if c.grimoire_type.name == "Blue grimoire":
+                    c.hp += 1
+                    c.attack += 1
+                    c.defense += 2
+                    c.speed  += 1
+                if c.grimoire_type.name == "Green grimoire":
+                    c.hp += 1
+                    c.attack += 1
+                    c.defense += 1
+                    c.speed  += 2
+                    
+
                 c.player.mana = c.player.mana - required_mana
             else:
                 raise ValidationError("You don't have enough mana %s" % required_mana)       
@@ -347,7 +425,7 @@ class grimoire(models.Model):
             if player.gold >= 10000 and player.mana >= 8000 and player.evolver >= 5000 :
                 self.env['white_clover.grimoire'].create({
                     "player": b.player.id,
-                    "grimoire": b.id
+                    "grimoire_type": b.id
                 })
                 player.gold -= 10000
                 player.mana -= 8000
@@ -379,8 +457,8 @@ class battle(models.Model):
     distance = fields.Float(compute='_get_time')
     progress = fields.Float()
     state = fields.Selection([('1', 'Preparation'), ('2', 'Send'), ('3', 'Finished')], default='1')
-    player1 = fields.Many2one('white_clover.player')
-    player2 = fields.Many2one('white_clover.player')
+    player1 = fields.Many2one('white_clover.player',required = True)
+    player2 = fields.Many2one('white_clover.player',required = True)
     grimoire_list = fields.One2many('white_clover.battle_grimoire_rel', 'battle_id')
 
     #esto lo haremos en un futuro al hacer la batalla
